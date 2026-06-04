@@ -58,11 +58,15 @@ function App() {
         scrollToBottom();
     }, [messages]);
 
-    // Conectar al servidor
-    const connectToServer = () => {
-        if (!user.name || !user.id) return alert("Ingresa nombre e ID");
-        
-        const newSocket = io('http://localhost:3001'); // URL del backend
+// --- CONEXIÓN AL SERVIDOR (CONFIGURACIÓN PARA PRODUCCIÓN) ---
+const API_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3001' 
+    : window.location.origin; // En producción usa el mismo dominio donde está alojado
+
+const connectToServer = () => {
+    if (!user.name || !user.id) return alert("Ingresa nombre e ID");
+    
+    const newSocket = io(API_URL);
         
         newSocket.on('connect', () => {
             console.log('Conectado al servidor');
