@@ -13,9 +13,13 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(cors());
+
+// Servir archivos estáticos desde la carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
 
 const server = http.createServer(app);
 const io = new Server(server, {

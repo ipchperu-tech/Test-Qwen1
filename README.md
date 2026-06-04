@@ -1,81 +1,117 @@
-# Sistema de Mensajería para Instituto Virtual
+# Instituto Virtual - Portal de Comunicación
 
-Este proyecto contiene un prototipo funcional de una aplicación de mensajería en tiempo real diseñada específicamente para institutos de educación virtual. Permite la comunicación entre alumnos, docentes y colaboradores, organizada por aulas virtuales.
+Aplicación de mensajería en tiempo real para institutos educativos con clases 100% en vivo.
 
-## 🚀 Características Principales
+## 🚀 Despliegue en Producción (Solo subiendo a GitHub)
 
-1.  **Gestión de Roles:** Diferenciación clara entre Alumnos, Docentes, Colaboradores y Administradores.
-2.  **Aulas Virtuales:** Creación de grupos específicos para cada clase (ej: "Matemáticas", "Historia").
-3.  **Chat en Tiempo Real:**
-    *   **Grupal:** Dentro de cada aula para discusiones de clase.
-    *   **Privado:** Mensajería directa entre usuarios (ej: alumno consultando al docente).
-4.  **Campañas Comunicativas:** Los administradores pueden enviar notificaciones masivas (pop-ups) a todos los conectados.
-5.  **Multi-plataforma:** Funciona en navegadores Web y es adaptable para móviles (Responsive).
+Esta aplicación está configurada para desplegarse automáticamente en **Render**, **Railway** o **Heroku** simplemente conectando tu repositorio de GitHub.
+
+### Pasos para publicar:
+
+#### Opción A: Usando Render (Recomendado - Gratis)
+
+1. Sube este código a tu repositorio de GitHub:
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   git push origin main
+   ```
+
+2. Ve a [render.com](https://render.com) y crea una cuenta gratuita.
+
+3. Haz clic en **"New +"** → **"Web Service"**.
+
+4. Conecta tu repositorio de GitHub.
+
+5. Configura el servicio:
+   - **Name**: `instituto-chat` (o el nombre que quieras)
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node server.js`
+   - **Instance Type**: Free
+
+6. Haz clic en **"Create Web Service"**.
+
+7. ¡Listo! Render te dará una URL como `https://instituto-chat.onrender.com` donde tu app estará disponible 24/7.
+
+#### Opción B: Usando Railway
+
+1. Sube tu código a GitHub.
+
+2. Ve a [railway.app](https://railway.app) e inicia sesión con GitHub.
+
+3. Haz clic en **"New Project"** → **"Deploy from GitHub repo"**.
+
+4. Selecciona tu repositorio.
+
+5. Railway detectará automáticamente que es Node.js y desplegará.
+
+#### Opción C: Usando Heroku
+
+1. Instala la CLI de Heroku en tu computadora.
+
+2. Ejecuta estos comandos:
+   ```bash
+   heroku login
+   heroku create instituto-chat-app
+   git push heroku main
+   ```
+
+---
+
+## 📱 Cómo usar la aplicación
+
+### Para el Administrador del Instituto:
+
+1. Accede a la URL de tu aplicación desplegada.
+2. Inicia sesión como **Administrador**.
+3. Desde el panel podrás:
+   - Ver todos los aulas creadas.
+   - Enviar **campañas comunicativas** masivas a todos los usuarios.
+   - Monitorear la actividad.
+
+### Para Docentes y Alumnos:
+
+1. Accede a la URL proporcionada por el instituto.
+2. Ingresa tu **Nombre**, **ID de usuario** y selecciona tu **Rol**.
+3. Selecciona un aula de la lista lateral.
+4. Comienza a chatear en tiempo real con los miembros del aula.
+
+---
 
 ## 🛠️ Tecnologías Utilizadas
 
-*   **Backend:** Node.js, Express, Socket.io (para comunicación en tiempo real).
-*   **Frontend:** React (vía CDN para prototipado rápido), Tailwind CSS (estilos), HTML5.
-*   **Base de Datos:** Simulada en memoria (Mapas de JS) para este demo. En producción se recomienda MongoDB o PostgreSQL.
+- **Backend**: Node.js, Express, Socket.io
+- **Frontend**: React (CDN), TailwindCSS
+- **Comunicación**: WebSockets para tiempo real
 
-## 📋 Instrucciones de Instalación y Ejecución
+## 📂 Estructura del Proyecto
 
-Sigue estos pasos para levantar el entorno de desarrollo en tu máquina local.
-
-### 1. Preparar el Entorno
-
-Asegúrate de tener instalado **Node.js** (versión 14 o superior).
-
-Abre tu terminal en la carpeta donde guardaste estos archivos (`/workspace`) e inicializa el proyecto:
-
-```bash
-npm init -y
-npm install express socket.io cors
+```
+/workspace
+├── server.js              # Servidor backend (API + WebSockets)
+├── package.json           # Dependencias y scripts
+├── public/
+│   └── index.html         # Frontend completo (React embebido)
+└── README.md              # Este archivo
 ```
 
-### 2. Iniciar el Servidor (Backend)
+## 🔌 Endpoints API
 
-En una terminal, ejecuta el servidor de Node.js:
+- `POST /api/classrooms/create` - Crear nueva aula
+- `POST /api/classrooms/enroll` - Inscribir alumno en aula
+- `POST /api/admin/broadcast` - Enviar notificación masiva
 
-```bash
-node instituto-chat-server.js
-```
+## 🎯 Funcionalidades
 
-*Deberías ver el mensaje: `SERVIDOR DE CHAT DEL INSTITUTO CORRIENDO EN PUERTO 3001`*
+✅ Chat grupal por aulas virtuales
+✅ Mensajería privada entre usuarios
+✅ Notificaciones push en tiempo real
+✅ Campañas comunicativas masivas
+✅ Roles diferenciados (Admin, Docente, Alumno)
+✅ Interfaz responsive (Web y Móvil)
+✅ Historial de mensajes (en memoria para demo)
 
-### 3. Iniciar el Cliente (Frontend)
+---
 
-Tienes dos opciones para ver la interfaz:
-
-**Opción A (Servidor Simple):**
-Si tienes Python instalado, puedes levantar un servidor estático rápidamente en otra terminal:
-```bash
-# Para Python 3
-python3 -m http.server 8080
-```
-Luego abre tu navegador en `http://localhost:8080/instituto-chat-client.html`.
-
-**Opción B (Directo):**
-Simplemente abre el archivo `instituto-chat-client.html` haciendo doble clic en tu explorador de archivos. *Nota: Algunos navegadores pueden bloquear conexiones WebSocket si se abre directamente como archivo local (file://), por lo que la Opción A es más recomendada.*
-
-## 🧪 Cómo Probar las Funcionalidades
-
-1.  **Simular Usuarios:** Abre el archivo `instituto-chat-client.html` en **dos pestañas diferentes** o en **dos navegadores distintos** (ej: Chrome y Firefox).
-2.  **Login:**
-    *   En la pestaña 1, ingresa como **Admin** (Nombre: "Director", ID: "admin1", Rol: Administrador).
-    *   En la pestaña 2, ingresa como **Alumno** (Nombre: "Juan", ID: "u1", Rol: Alumno).
-3.  **Chatear en Aula:**
-    *   Ambos usuarios deben hacer clic en "Matemáticas Avanzadas" en la barra lateral.
-    *   Envíen mensajes y verán cómo aparecen instantáneamente en ambas pantallas.
-4.  **Enviar Campaña:**
-    *   Como **Admin**, haz clic en "Enviar Campaña" (simulado en el sidebar).
-    *   Verás que al **Alumno** le salta una alerta amarilla con la notificación masiva.
-
-## 🔮 Siguientes Pasos (Para Producción)
-
-Para convertir este prototipo en una aplicación real para tu instituto:
-
-1.  **Base de Datos Real:** Conectar el backend a MongoDB para guardar usuarios, historial de chats y estructura de aulas permanentemente.
-2.  **Autenticación:** Implementar Login con correo/contraseña y JWT (JSON Web Tokens) para seguridad.
-3.  **App Móvil:** Usar **React Native**. La lógica de este frontend es 90% compatible; solo habría que cambiar las etiquetas HTML (`div`, `input`) por componentes nativos (`View`, `TextInput`).
-4.  **Archivos:** Habilitar el envío de imágenes y PDFs usando `multer` en el backend.
+**Nota**: Esta versión usa almacenamiento en memoria. Para producción con datos persistentes, conecta una base de datos MongoDB o PostgreSQL.
