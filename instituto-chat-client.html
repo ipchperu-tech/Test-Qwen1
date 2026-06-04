@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instituto Virtual - Portal de Comunicación</title>
+    <!-- React y ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel para JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Socket.io Cliente -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Tailwind CSS para estilos rápidos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f3f4f6; }
+        .chat-container { height: calc(100vh - 80px); }
+        .message-bubble { max-width: 70%; padding: 10px 15px; border-radius: 15px; margin-bottom: 8px; }
+        .msg-sent { background-color: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-received { background-color: #e5e7eb; color: black; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-notification { background-color: #fef3c7; color: #92400e; align-self: center; text-align: center; font-size: 0.85rem; border: 1px solid #fcd34d; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+const { useState, useEffect, useRef } = React;
+
+// --- COMPONENTE PRINCIPAL ---
+function App() {
+    const [socket, setSocket] = useState(null);
+    const [user, setUser] = useState({ id: '', name: '', role: 'alumno' }); // Roles: alumno, docente, admin
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    
+    const [classrooms, setClassrooms] = useState([
+        { id: 'math101', name: 'Matemáticas Avanzadas' },
+        { id: 'prog202', name: 'Programación Web' }
+    ]);
+    const [currentRoom, setCurrentRoom] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [inputMsg, setInputMsg] = useState('');
+    
+    // Referencia para auto-scroll
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    // Conectar al servidor
+    const connectToServer = () => {
+        if (!user.name || !user.id) return alert("Ingresa nombre e ID");
+        
+        const newSocket = io('http://localhost:3001'); // URL del backend
+        
+        newSocket.on('connect', () => {
+            console.log('Conectado al servidor');
+            // Registrarse en el servidor
+            newSocket.emit('register_user', user);
+            setIsLoggedIn(true);
+        });
+
+        newSocket.on('receive_message', (data) => {
+            setMessages((prev) => [...prev, data]);
+        });
+
+        newSocket.on('receive_notification', (data) => {
+            setMessages((prev) => [...prev, { 
+                ...data, 
+                type: 'notification', 
+                content: `${data.title}: ${data.content}` 
+            }]);
+            alert(`🔔 NOTIFICACIÓN: ${data.title}`);
+        });
+
+        setSocket(newSocket);
+    };
+
+    // Unirse a un aula
+    const joinRoom = (roomId) => {
+        if (socket) {
+            socket.emit('join_classroom', roomId);
+            setCurrentRoom(roomId);
+            setMessages([]); // Limpiar chat anterior (en prod cargar historial)
+        }
+    };
+
+    // Enviar mensaje
+    const sendMessage = (e) => {
+        e.preventDefault();
+        if (!inputMsg.trim()) return;
+
+        const msgData = {
+            senderId: user.id,
+            content: inputMsg,
+            targetId: currentRoom,
+            targetType: 'classroom' // o 'private' si fuera chat 1 a 1
+        };
+
+        socket.emit('send_message', msgData);
+        setInputMsg('');
+    };
+
+    // --- VISTA DE LOGIN SIMULADO ---
+    if (!isLoggedIn) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-blue-600">
+                <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+                    <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Acceso Instituto</h1>
+                    
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Nombre</label>
+                        <input 
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                            type="text" 
+                            placeholder="Ej: Juan Pérez"
+                            onChange={(e) => setUser({...user, name: e.target.value})}
+                        />
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">ID Usuario</label>
+                        <input 
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                            type="text" 
+                            placeholder="Ej: u123"
+                            onChange={(e) => setUser({...user, id: e.target.value})}
+                        />
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Rol</label>
+                        <select 
+                            className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            onChange={(e) => setUser({...user, role: e.target.value})}
+                        >
+                            <option value="alumno">Alumno</option>
+                            <option value="docente">Docente</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+
+                    <button 
+                        onClick={connectToServer}
+                        className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    >
+                        Ingresar al Portal
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- VISTA DEL CHAT ---
+    return (
+        <div className="flex h-screen overflow-hidden">
+            
+            {/* SIDEBAR: Lista de Aulas */}
+            <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <h2 className="font-bold text-gray-700">Hola, {user.name}</h2>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded uppercase">{user.role}</span>
+                </div>
+                
+                <div className="p-4 overflow-y-auto flex-1">
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Mis Aulas</h3>
+                    <ul>
+                        {classrooms.map(room => (
+                            <li 
+                                key={room.id}
+                                onClick={() => joinRoom(room.id)}
+                                className={`p-3 mb-2 rounded cursor-pointer transition ${currentRoom === room.id ? 'bg-blue-500 text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                            >
+                                <i className="fas fa-chalkboard-teacher mr-2"></i>
+                                {room.name}
+                            </li>
+                        ))}
+                    </ul>
+
+                    {user.role === 'admin' && (
+                        <div className="mt-8 pt-4 border-t">
+                             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Admin</h3>
+                             <button className="w-full text-left p-2 text-red-600 hover:bg-red-50 rounded text-sm">
+                                <i className="fas fa-bullhorn mr-2"></i> Enviar Campaña
+                             </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* AREA PRINCIPAL: Chat */}
+            <div className="flex-1 flex flex-col bg-gray-100">
+                {currentRoom ? (
+                    <>
+                        {/* Header del Chat */}
+                        <div className="bg-white p-4 border-b border-gray-200 shadow-sm flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-800">
+                                {classrooms.find(c => c.id === currentRoom)?.name}
+                            </h2>
+                            <div className="text-sm text-gray-500">
+                                <i className="fas fa-users mr-1"></i> Grupo de Clase
+                            </div>
+                        </div>
+
+                        {/* Mensajes */}
+                        <div className="flex-1 overflow-y-auto p-4 chat-container flex flex-col">
+                            {messages.length === 0 && (
+                                <div className="text-center text-gray-400 mt-10">
+                                    <i className="fas fa-comments text-4xl mb-2"></i>
+                                    <p>No hay mensajes aún. ¡Saluda a tu clase!</p>
+                                </div>
+                            )}
+                            
+                            {messages.map((msg, index) => {
+                                if (msg.type === 'campaign' || msg.type === 'notification') {
+                                    return (
+                                        <div key={index} className="message-bubble msg-notification mx-auto my-2 rounded-lg shadow-sm">
+                                            <strong>{msg.title || 'Aviso'}</strong><br/>
+                                            {msg.content}
+                                        </div>
+                                    );
+                                }
+
+                                const isMe = msg.senderId === user.id;
+                                return (
+                                    <div key={index} className={`message-bubble shadow-sm ${isMe ? 'msg-sent' : 'msg-received'}`}>
+                                        {!isMe && <div className="text-xs font-bold opacity-75 mb-1">{msg.senderName}</div>}
+                                        <div>{msg.content}</div>
+                                        <div className="text-[10px] opacity-50 text-right mt-1">
+                                            {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Input de Mensaje */}
+                        <div className="bg-white p-4 border-t border-gray-200">
+                            <form onSubmit={sendMessage} className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:border-blue-500"
+                                    placeholder="Escribe un mensaje..."
+                                    value={inputMsg}
+                                    onChange={(e) => setInputMsg(e.target.value)}
+                                />
+                                <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition">
+                                    <i className="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-gray-400 flex-col">
+                        <i className="fas fa-comments text-6xl mb-4 text-gray-300"></i>
+                        <p className="text-xl">Selecciona un aula para comenzar a chatear</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+</script>
+</body>
+</html>
